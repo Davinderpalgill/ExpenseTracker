@@ -1,12 +1,23 @@
+import os
 from telegram import Update
-from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters, CommandHandler
+from telegram.ext import (
+    ApplicationBuilder,
+    MessageHandler,
+    CommandHandler,
+    ContextTypes,
+    filters
+)
 from ingest.parser import parse_expense
 from reports.summary import category_summary_text, is_today, is_week, is_month
 
-# Directly assign token here
+# Auto-run db_init.py if DB file does not exist
+if not os.path.exists("data/expenses.db"):
+    import db_init
+
+# Bot token
 BOT_TOKEN = "8139719801:AAEULb0_KYRYaZ-EEJXJ96Hqqdog6GzIQ7Q"
 
-# Handle any text message (non-command)
+# Handle normal text messages (expenses)
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message.from_user
     text = update.message.text
@@ -14,10 +25,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     username = user.username or user.first_name
     parse_expense(text, username)
 
-# Handle /summary
+# /summary command (all summaries)
 async def send_summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
     username = update.message.from_user.username or update.message.from_user.first_name
-
     today = category_summary_text(username, is_today, "Today")
     week = category_summary_text(username, is_week, "This Week")
     month = category_summary_text(username, is_month, "This Month")
@@ -25,25 +35,25 @@ async def send_summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply = f"📅 *Expense Summary for {username}*\n\n{today}\n\n{week}\n\n{month}"
     await update.message.reply_text(reply, parse_mode="Markdown")
 
-# Handle /summary_today
+# /summary_today
 async def summary_today(update: Update, context: ContextTypes.DEFAULT_TYPE):
     username = update.message.from_user.username or update.message.from_user.first_name
     text = category_summary_text(username, is_today, "Today")
     await update.message.reply_text(text, parse_mode="Markdown")
 
-# Handle /summary_week
+# /summary_week
 async def summary_week(update: Update, context: ContextTypes.DEFAULT_TYPE):
     username = update.message.from_user.username or update.message.from_user.first_name
     text = category_summary_text(username, is_week, "This Week")
     await update.message.reply_text(text, parse_mode="Markdown")
 
-# Handle /summary_month
+# /summary_month
 async def summary_month(update: Update, context: ContextTypes.DEFAULT_TYPE):
     username = update.message.from_user.username or update.message.from_user.first_name
     text = category_summary_text(username, is_month, "This Month")
     await update.message.reply_text(text, parse_mode="Markdown")
 
-# Build and run bot
+# Bot application setup
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 app.add_handler(CommandHandler("summary", send_summary))
