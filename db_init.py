@@ -1,3 +1,4 @@
+# db_init.py
 import sqlite3
 
 conn = sqlite3.connect("data/expenses.db")
@@ -7,13 +8,13 @@ cursor.execute("""
 CREATE TABLE IF NOT EXISTS expenses (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL,
-    date TEXT,
-    time TEXT,
-    category TEXT,
-    amount REAL,
-    payment_type TEXT,
+    date TIMESTAMP NOT NULL,
+    time TEXT NOT NULL,
+    category TEXT NOT NULL,
+    amount REAL NOT NULL,
+    payment_mode TEXT,
     receiver TEXT,
-    notes TEXT
+    transaction_type TEXT
 )
 """)
 
