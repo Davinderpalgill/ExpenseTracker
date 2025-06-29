@@ -1,3 +1,4 @@
+import os
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
@@ -8,7 +9,10 @@ from telegram.ext import (
 )
 from ingest.parser import parse_expense
 from reports.summary import category_summary_text, is_today, is_week, is_month
+import os
+from db_init import initialize_db
 
+initialize_db()
 # Bot token
 BOT_TOKEN = "8139719801:AAEULb0_KYRYaZ-EEJXJ96Hqqdog6GzIQ7Q"
 
