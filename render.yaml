@@ -1,7 +1,0 @@
-jobs:
-  - name: init-db-job
-    type: job
-    runtime: python
-    plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: python db_init.py
