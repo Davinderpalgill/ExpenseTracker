@@ -1,35 +1,51 @@
 import sqlite3
 from datetime import datetime
 
-def parse_expense(message: str, username: str):
-    tokens = message.strip().split()
-    
-    if len(tokens) < 3:
-        print("❌ Invalid message format. Use: <Category> <Amount> <Type> [Receiver] [Notes]")
+def parse_expense(text: str, username: str):
+    tokens = text.strip().split()
+
+    if len(tokens) < 2:
+        print("❌ Invalid message format")
         return
 
-    category = tokens[0].capitalize()
     try:
+        # Extract core fields
+        category = tokens[0].capitalize()
         amount = float(tokens[1])
-    except ValueError:
-        print("❌ Amount must be a number.")
-        return
+        transaction_type = 'debit'  # default type
+        payment_mode = 'cash'       # default payment mode
+        receiver = None
 
-    payment_type = tokens[2].lower()  # cash/online
-    receiver = tokens[3] if len(tokens) >= 4 else ""
-    notes = " ".join(tokens[4:]) if len(tokens) >= 5 else ""
+        # Detect credit transactions
+        if 'credited' in text.lower() or category.lower() in ['credited', 'income', 'salary']:
+            transaction_type = 'credit'
+            if category.lower() == 'credited':
+                category = 'Income'
 
-    now = datetime.now()
-    date = now.strftime("%Y-%m-%d")
-    time = now.strftime("%H:%M")
+        # Extract optional info: mode & receiver
+        for token in tokens[2:]:
+            token_lower = token.lower()
+            if token_lower in ['cash', 'online']:
+                payment_mode = token_lower
+            elif token_lower != 'credited':
+                receiver = token
 
-    conn = sqlite3.connect("data/expenses.db")
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO expenses (username, date, time, category, amount, payment_type, receiver, notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, (username, date, time, category, amount, payment_type, receiver, notes))
-    conn.commit()
-    conn.close()
+        now = datetime.now()
+        date = now.date().isoformat()
+        time = now.strftime('%H:%M:%S')
 
-    print(f"✅ Stored: {category} ₹{amount} via {payment_type} to {receiver} — {notes}")
+        # Insert into DB
+        conn = sqlite3.connect('data/expenses.db')
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO expenses (username, date, time, category, amount, payment_mode, receiver, transaction_type)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (username, date, time, category, amount, payment_mode, receiver, transaction_type))
+
+        conn.commit()
+        conn.close()
+
+        print(f"✅ {transaction_type.upper()} entry added for {username}: {category} - ₹{amount}")
+
+    except Exception as e:
+        print(f"❌ Error: {e}")
